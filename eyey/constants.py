@@ -1,0 +1,7 @@
+IMPORTANT = b'important'
+NOT_IMPORTANT = b'not-important'
+SHOULD_BE_IMPORTANT = b'should-be-important'
+SHOULD_BE_NOT_IMPORTANT = b'should-be-not-important'
+RETRAIN = b'retrain'
+RELABEL = b'relabel'
+DELETED = b'\\Deleted'

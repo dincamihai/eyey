@@ -1,0 +1,7 @@
+*__pycache__*
+*sandbox*
+*.pyc
+credentials.py
+data/*
+trained/*
+word2vec

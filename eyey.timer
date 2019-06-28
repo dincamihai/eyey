@@ -1,0 +1,10 @@
+[Unit]
+Description=run eyey.tagger every 10 mins
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target
+

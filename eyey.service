@@ -1,0 +1,10 @@
+[Unit]
+Description=eyey.tagger
+
+[Service]
+Type=simple
+WorkingDirectory=%h/store/repositories/eyey
+ExecStart=%h/store/repositories/eyey/sandbox.py/bin/python %h/store/repositories/eyey/eyey/tagger.py
+
+[Install]
+WantedBy=multi-user.target

@@ -26,20 +26,18 @@ import constants
 
 class Tagger(object):
 
-    def __init__(self):
-        export_dir = glob.glob(os.getcwd() + '/trained/export/exporter/*')[-1]
+    def __init__(self, outdir, folders):
+        path = os.getcwd() + '/' + outdir + '/export/exporter/*'
+        log.info("Loading model from: " + path)
+        export_dir = glob.glob(path)[-1]
         self.predict_fn = predictor.from_saved_model(export_dir)
         self.porter = PorterStemmer()
         con = get_connection()
-        ok, folders = con.list('INBOX')
+        ok, _ = con.list('INBOX')
         assert ok == "OK"
-        all_folders = [f.split()[-1] for f in folders]
+        # all_folders = [f.split()[-1] for f in folders]
         self.con = con
-        self.folders = [
-            'INBOX',
-            # 'INBOX/suse-manager',
-            # 'INBOX/salt',
-        ]
+        self.folders = folders
 
     def predict(self, features):
         if features is None:
@@ -74,9 +72,14 @@ class Tagger(object):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--outdir', default='./trained', type=str)
+    parser.add_argument('--folders', default='INBOX', type=str, nargs='+')
+    args = parser.parse_args()
     unknown_words = []
     log.info('Checking for new email')
-    tagger = Tagger()
+    # folders = ['INBOX', 'INBOX/suse-manager', 'INBOX/salt', ])
+    tagger = Tagger(args.outdir, args.folders)
 
     # Train an messages marked with 'train' flag
     to_train = []
@@ -90,9 +93,9 @@ if __name__ == "__main__":
 
     if to_train:
         import model
-        model.post_train_and_evaluate(pd.concat(to_train), './trained/')
+        model.post_train_and_evaluate(pd.concat(to_train), './trained/', './data')
         # need to load the new trained model
-        tagger = Tagger()
+        tagger = Tagger(args.outdir, args.folders)
 
     # Set flags
     for (uid, flags, (features, part_unknown_words)) in tagger.next(
@@ -105,7 +108,7 @@ if __name__ == "__main__":
         tagger.con.store(uid, "-FLAGS", constants.RELABEL.decode('utf8'))
         important = tagger.predict(features)
         if important is None:
-            lof.warning('No features for %s', uid)
+            log.warning('No features for %s', uid)
         elif important:
             tagger.set_important(uid)
         else:

@@ -5,6 +5,7 @@ import shutil
 import mailbox
 import word2vec
 import gensim
+import argparse
 from nltk.stem.porter import PorterStemmer
 import pandas as pd
 
@@ -22,14 +23,17 @@ def clean_outputs():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--folders', default='INBOX', type=str, nargs='+')
+    parser.add_argument('--csvdir', default='./data', type=str)
+    args = parser.parse_args()
     clean_outputs()
     porter = PorterStemmer()
-    folders = ['INBOX']
     unknown_words = []
 
     con = get_connection()
 
-    for folder in folders:
+    for folder in args.folders:
         log.info(folder)
         con.select(folder, readonly=True)
         for (uid, msg, flags) in get_messages(con, folder, 'ALL'):
@@ -42,11 +46,11 @@ if __name__ == "__main__":
             mode = 'test' if (int(split_hash) % 10) >= 8 else 'train'
             if features is None:
                 continue
-            with open('data/{}-{}.csv'.format(mode, label), 'a') as f:
+            with open(args.csvdir + '/{}-{}.csv'.format(mode, label), 'a') as f:
                 f.write(features.to_csv(index=False, header=False))
             unknown_words += message_unknown_words
     if unknown_words:
-        with open('data/unknown_words.csv', 'wb') as f:
+        with open(args.csv_dir + '/unknown_words.csv', 'wb') as f:
             unkw_df = pd.DataFrame(
                 unknown_words
             ).reset_index().groupby(0).count().sort_values(

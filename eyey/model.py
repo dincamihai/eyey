@@ -1,16 +1,14 @@
+import shutil
+import argparse
+import datetime
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe
+# import tensorflow.contrib.eager as tfe
 # tf.enable_eager_execution()
 
-import shutil
-import pandas as pd
-import datetime
 from config import EVAL_INTERVAL, BODY_FEATURES, SUBJECT_FEATURES, BUGZILLA_HEADERS
 
 
 tf.set_random_seed(1234)
-
-OUTDIR = './trained'
 
 
 CSV_COLUMNS = (
@@ -369,23 +367,20 @@ def get_feature_columns():
             # x_spam_score_col,
             github_recipient_col,
             github_reason_col,
-            # bugzilla_reason,
+            bugzilla_reason,
             # bugzilla_type,
-            # bugzilla_component,
+            bugzilla_component,
             # bugzilla_who,
             bugzilla_status,
             # bugzilla_priority,
             bugzilla_assigned_to,
             # bugzilla_keywords0,
             # bugzilla_keywords1,
-            # body_crossed_col,
+            body_crossed_col,
         ] +
         # subject_cols +
         body_cols
     )
-
-
-feature_cols = get_feature_columns()
 
 
 def read_csv_row_in():
@@ -519,18 +514,18 @@ def get_estimator(output_dir, hparams, learning_rate=None):
     return estimator
 
 
-def train_and_evaluate(output_dir, hparams):
+def train_and_evaluate(output_dir, hparams, csv_dir="./data"):
     tf.logging.set_verbosity(tf.logging.INFO)
     estimator = get_estimator(output_dir, hparams, learning_rate=0.06)
 
     train_spec = tf.estimator.TrainSpec(
-        input_fn=lambda: read_dataset('data/train-*.csv', tf.estimator.ModeKeys.TRAIN, batch_size=hparams['batch_size']),
+        input_fn=lambda: read_dataset(csv_dir + '/train-*.csv', tf.estimator.ModeKeys.TRAIN, batch_size=hparams['batch_size']),
         max_steps=hparams['num_train_steps'])
 
     exporter = tf.estimator.LatestExporter('exporter', serving_input_receiver_fn)
 
     eval_spec = tf.estimator.EvalSpec(
-        input_fn=lambda: read_dataset('data/test-*.csv', tf.estimator.ModeKeys.EVAL, batch_size=hparams['batch_size']),
+        input_fn=lambda: read_dataset(csv_dir + '/test-*.csv', tf.estimator.ModeKeys.EVAL, batch_size=hparams['batch_size']),
         steps=None,
         start_delay_secs=1,  # start evaluating after N seconds
         throttle_secs=5,  # evaluate every N seconds
@@ -539,7 +534,7 @@ def train_and_evaluate(output_dir, hparams):
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
 
 
-def post_train_and_evaluate(features, output_dir):
+def post_train_and_evaluate(features, output_dir, csv_dir):
     tf.logging.set_verbosity(tf.logging.INFO)
     estimator = get_estimator(output_dir, 0.1)
 
@@ -558,7 +553,7 @@ def post_train_and_evaluate(features, output_dir):
 
     estimator.evaluate(
         input_fn=lambda: read_dataset(
-            'data/test-*.csv', tf.estimator.ModeKeys.EVAL, batch_size=32),
+            csv_dir + '/test-*.csv', tf.estimator.ModeKeys.EVAL, batch_size=32),
         steps=None)
 
     estimator.export_saved_model(
@@ -585,17 +580,22 @@ def post_train_and_evaluate(features, output_dir):
 
 
 if __name__ == '__main__':
-    shutil.rmtree(OUTDIR, ignore_errors=True) # start fresh each time
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--outdir', default='./trained')
+    parser.add_argument('--csvdir', default='./data')
+    args = parser.parse_args()
+    shutil.rmtree(args.outdir, ignore_errors=True) # start fresh each time
     train_and_evaluate(
-        OUTDIR,
+        args.outdir,
         hparams={
-            'num_train_steps': 4200,
-            'feature_columns': feature_cols,
+            'num_train_steps': 5500,
+            'feature_columns': get_feature_columns(),
             'learning_rate': 0.03,
             'l1_regularization': 0.0,
             'l2_regularization': 0.3,
             # 'batch_norm': True,
             'activation': tf.nn.relu,
-            'batch_size': 64,
-        }
+            'batch_size': 32,
+        },
+        csv_dir=args.csvdir
     )

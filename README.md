@@ -1,3 +1,3 @@
-python eyey/fetch.py --folders INBOX --csvdir ./data # fetch
-python eyey/model.py --outdir ./trained --csvdir ./data # train
-python eyey/tagger.py --outdir trained --folders INBOX # run
+python eyey/fetch.py --params default # fetch
+python eyey/model.py --params default # train
+python eyey/tagger.py --params default # run

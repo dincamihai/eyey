@@ -6,7 +6,7 @@ import tensorflow as tf
 # tf.enable_eager_execution()
 
 from config import EVAL_INTERVAL, BODY_FEATURES, SUBJECT_FEATURES, BUGZILLA_HEADERS
-
+from params import PARAMS
 
 tf.set_random_seed(1234)
 
@@ -581,21 +581,20 @@ def post_train_and_evaluate(features, output_dir, csv_dir):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--outdir', default='./trained')
-    parser.add_argument('--csvdir', default='./data')
+    parser.add_argument('--params', default='default')
     args = parser.parse_args()
-    shutil.rmtree(args.outdir, ignore_errors=True) # start fresh each time
+    shutil.rmtree(PARAMS[args.params]['outdir'], ignore_errors=True) # start fresh each time
     train_and_evaluate(
-        args.outdir,
+        PARAMS[args.params]['outdir'],
         hparams={
-            'num_train_steps': 5500,
+            'num_train_steps': 5200,
             'feature_columns': get_feature_columns(),
-            'learning_rate': 0.03,
+            'learning_rate': 0.01,
             'l1_regularization': 0.0,
             'l2_regularization': 0.3,
             # 'batch_norm': True,
             'activation': tf.nn.relu,
-            'batch_size': 32,
+            'batch_size': 16,
         },
-        csv_dir=args.csvdir
+        csv_dir=PARAMS[args.params]['csvdir']
     )

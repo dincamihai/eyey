@@ -12,6 +12,7 @@ import pandas as pd
 from utils import get_messages, log, get_label
 from config import get_connection
 from process_live import process_message
+from params import PARAMS
 
 
 def clean_outputs():
@@ -24,8 +25,7 @@ def clean_outputs():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--folders', default='INBOX', type=str, nargs='+')
-    parser.add_argument('--csvdir', default='./data', type=str)
+    parser.add_argument('--params', default='default')
     args = parser.parse_args()
     clean_outputs()
     porter = PorterStemmer()
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     con = get_connection()
 
-    for folder in args.folders:
+    for folder in PARAMS[args.params]['folders']:
         log.info(folder)
         con.select(folder, readonly=True)
         for (uid, msg, flags) in get_messages(con, folder, 'ALL'):
@@ -46,11 +46,11 @@ if __name__ == "__main__":
             mode = 'test' if (int(split_hash) % 10) >= 8 else 'train'
             if features is None:
                 continue
-            with open(args.csvdir + '/{}-{}.csv'.format(mode, label), 'a') as f:
+            with open(PARAMS[args.params]['csvdir'] + '/{}-{}.csv'.format(mode, label), 'a') as f:
                 f.write(features.to_csv(index=False, header=False))
             unknown_words += message_unknown_words
     if unknown_words:
-        with open(args.csv_dir + '/unknown_words.csv', 'wb') as f:
+        with open(PARAMS[args.params]['csvdir'] + '/unknown_words.csv', 'wb') as f:
             unkw_df = pd.DataFrame(
                 unknown_words
             ).reset_index().groupby(0).count().sort_values(

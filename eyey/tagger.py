@@ -18,6 +18,7 @@ from nltk.stem.porter import PorterStemmer
 
 from utils import get_messages, log, get_label
 from config import get_connection
+from params import PARAMS
 
 from process_live import process_message
 import constants
@@ -73,13 +74,13 @@ class Tagger(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--outdir', default='./trained', type=str)
-    parser.add_argument('--folders', default='INBOX', type=str, nargs='+')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--params', default='default')
     args = parser.parse_args()
     unknown_words = []
     log.info('Checking for new email')
     # folders = ['INBOX', 'INBOX/suse-manager', 'INBOX/salt', ])
-    tagger = Tagger(args.outdir, args.folders)
+    tagger = Tagger(PARAMS[args.params]['outdir'], PARAMS[args.params]['folders'])
 
     # Train an messages marked with 'train' flag
     to_train = []
@@ -95,7 +96,7 @@ if __name__ == "__main__":
         import model
         model.post_train_and_evaluate(pd.concat(to_train), './trained/', './data')
         # need to load the new trained model
-        tagger = Tagger(args.outdir, args.folders)
+        tagger = Tagger(PARAMS[args.params]['outdir'], PARAMS[args.params]['folders'])
 
     # Set flags
     for (uid, flags, (features, part_unknown_words)) in tagger.next(
